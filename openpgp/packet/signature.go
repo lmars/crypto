@@ -98,7 +98,7 @@ func (sig *Signature) parse(r io.Reader) (err error) {
 	sig.SigType = SignatureType(buf[0])
 	sig.PubKeyAlgo = PublicKeyAlgorithm(buf[1])
 	switch sig.PubKeyAlgo {
-	case PubKeyAlgoRSA, PubKeyAlgoRSASignOnly, PubKeyAlgoDSA, PubKeyAlgoECDSA:
+	case PubKeyAlgoRSA, PubKeyAlgoRSASignOnly, PubKeyAlgoDSA, PubKeyAlgoECDSA, PubKeyAlgoECDH:
 	default:
 		err = errors.UnsupportedError("public key algorithm " + strconv.Itoa(int(sig.PubKeyAlgo)))
 		return
@@ -162,7 +162,7 @@ func (sig *Signature) parse(r io.Reader) (err error) {
 		if err == nil {
 			sig.DSASigS.bytes, sig.DSASigS.bitLength, err = readMPI(r)
 		}
-	case PubKeyAlgoECDSA:
+	case PubKeyAlgoECDSA, PubKeyAlgoECDH:
 		sig.ECDSASigR.bytes, sig.ECDSASigR.bitLength, err = readMPI(r)
 		if err == nil {
 			sig.ECDSASigS.bytes, sig.ECDSASigS.bitLength, err = readMPI(r)
@@ -535,7 +535,7 @@ func (sig *Signature) Sign(h hash.Hash, priv *PrivateKey, config *Config) (err e
 			sig.DSASigS.bytes = s.Bytes()
 			sig.DSASigS.bitLength = uint16(8 * len(sig.DSASigS.bytes))
 		}
-	case PubKeyAlgoECDSA:
+	case PubKeyAlgoECDSA, PubKeyAlgoECDH:
 		var r, s *big.Int
 		if pk, ok := priv.PrivateKey.(*ecdsa.PrivateKey); ok {
 			// direct support, avoid asn1 wrapping/unwrapping
@@ -611,7 +611,7 @@ func (sig *Signature) Serialize(w io.Writer) (err error) {
 	case PubKeyAlgoDSA:
 		sigLength = 2 + len(sig.DSASigR.bytes)
 		sigLength += 2 + len(sig.DSASigS.bytes)
-	case PubKeyAlgoECDSA:
+	case PubKeyAlgoECDSA, PubKeyAlgoECDH:
 		sigLength = 2 + len(sig.ECDSASigR.bytes)
 		sigLength += 2 + len(sig.ECDSASigS.bytes)
 	default:
@@ -651,7 +651,7 @@ func (sig *Signature) Serialize(w io.Writer) (err error) {
 		err = writeMPIs(w, sig.RSASignature)
 	case PubKeyAlgoDSA:
 		err = writeMPIs(w, sig.DSASigR, sig.DSASigS)
-	case PubKeyAlgoECDSA:
+	case PubKeyAlgoECDSA, PubKeyAlgoECDH:
 		err = writeMPIs(w, sig.ECDSASigR, sig.ECDSASigS)
 	default:
 		panic("impossible")

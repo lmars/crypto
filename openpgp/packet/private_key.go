@@ -64,6 +64,13 @@ func NewECDSAPrivateKey(creationTime time.Time, priv *ecdsa.PrivateKey) *Private
 	return pk
 }
 
+func NewECDHPrivateKey(creationTime time.Time, priv *ecdsa.PrivateKey, kdfHash byte, kdfAlgo CipherFunction) *PrivateKey {
+	pk := new(PrivateKey)
+	pk.PublicKey = *NewECDHPublicKey(creationTime, &priv.PublicKey, kdfHash, kdfAlgo)
+	pk.PrivateKey = priv
+	return pk
+}
+
 // NewSignerPrivateKey creates a PrivateKey from a crypto.Signer that
 // implements RSA or ECDSA.
 func NewSignerPrivateKey(creationTime time.Time, signer crypto.Signer) *PrivateKey {
@@ -287,7 +294,7 @@ func (pk *PrivateKey) parsePrivateKey(data []byte) (err error) {
 		return pk.parseDSAPrivateKey(data)
 	case PubKeyAlgoElGamal:
 		return pk.parseElGamalPrivateKey(data)
-	case PubKeyAlgoECDSA:
+	case PubKeyAlgoECDSA, PubKeyAlgoECDH:
 		return pk.parseECDSAPrivateKey(data)
 	}
 	panic("impossible")

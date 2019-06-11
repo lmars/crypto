@@ -255,6 +255,17 @@ func NewECDSAPublicKey(creationTime time.Time, pub *ecdsa.PublicKey) *PublicKey 
 	return pk
 }
 
+func NewECDHPublicKey(creationTime time.Time, pub *ecdsa.PublicKey, kdfHash byte, kdfAlgo CipherFunction) *PublicKey {
+	pk := NewECDSAPublicKey(creationTime, pub)
+	pk.PubKeyAlgo = PubKeyAlgoECDH
+	pk.ecdh = &ecdhKdf{
+		KdfAlgo: kdfAlgorithm(kdfAlgo),
+		KdfHash: kdfHashFunction(kdfHash),
+	}
+	pk.setFingerPrintAndKeyId()
+	return pk
+}
+
 func (pk *PublicKey) parse(r io.Reader) (err error) {
 	// RFC 4880, section 5.5.2
 	var buf [6]byte
